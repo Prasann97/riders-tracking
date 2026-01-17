@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base href="/riders-tracking/">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Riders Tracking | Real-time Partner GPS</title>
+    <meta name="description"
+        content="Track your riding partners in real-time with Riders Tracking. Optimized for mobile use while riding.">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0a0b10">
+    <link rel="stylesheet" href="index.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Google Maps Background -->
+    <div id="map"></div>
+
+    <!-- UI Overlay -->
+    <div class="overlay-ui">
+
+        <!-- Top Status Bar -->
+        <div class="top-bar">
+            <div class="status-indicator">
+                <div class="dot" id="connection-dot"></div>
+                <span id="status-text">LIVE TRACKING</span>
+            </div>
+            <div class="ride-info">
+                <div class="stat-label">Ride Code</div>
+                <div class="ride-code" id="display-ride-code">----</div>
+            </div>
+        </div>
+
+        <!-- Map Tools -->
+        <div class="map-tools">
+            <button class="tool-btn" id="zoom-fit-btn" title="Fit all riders">⛶</button>
+        </div>
+
+        <!-- Bottom Stats and Controls -->
+        <div class="bottom-controls">
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value" id="current-speed">0.0</span>
+                    <span class="stat-label">KM/H</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="distance-covered">0.0</span>
+                    <span class="stat-label">Distance (KM)</span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-sos" id="sos-btn">SOS</button>
+                <button class="btn btn-primary" id="main-action-btn">START RIDE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="modal" id="setup-modal">
+        <h2 style="margin-bottom: 20px; font-weight: 800;">Ride Setup</h2>
+
+        <div class="input-group">
+            <label>Your Name</label>
+            <input type="text" id="user-name" placeholder="E.g. John Wick">
+        </div>
+
+        <div class="input-group">
+            <label>Bike Model</label>
+            <input type="text" id="bike-model" placeholder="E.g. Duke 390">
+        </div>
+
+        <div class="input-group" id="join-code-group">
+            <label>Ride Code (to join existing)</label>
+            <input type="text" id="join-code" placeholder="Leave empty for new ride">
+        </div>
+
+        <button class="btn btn-primary" id="confirm-setup" style="width: 100%;">READY TO RIDE</button>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

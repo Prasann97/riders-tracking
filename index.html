@@ -15,6 +15,10 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <!-- Leaflet Geocoder CSS (for searching destinations) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,6 +49,14 @@
         <div class="map-tools">
             <button class="tool-btn" id="theme-toggle-btn" title="Toggle Theme">🌓</button>
             <button class="tool-btn" id="zoom-fit-btn" title="Fit all riders">⛶</button>
+        </div>
+
+        <!-- Travel Mode Selector (Hidden by default) -->
+        <div id="nav-mode-selector" class="nav-bar" style="display: none;">
+            <button class="mode-btn active" data-mode="motorcycle">🏍️</button>
+            <button class="mode-btn" data-mode="car">🚗</button>
+            <button class="mode-btn" data-mode="bicycle">🚲</button>
+            <button class="mode-btn" data-mode="walk">🚶</button>
         </div>
 
         <!-- Bottom Stats and Controls -->
@@ -82,7 +94,17 @@
             <input type="text" id="bike-model" placeholder="E.g. Duke 390">
         </div>
 
-        <div class="input-group" id="join-code-group">
+        <div class="input-group">
+            <label>Vehicle Type</label>
+            <select id="vehicle-type" class="form-select">
+                <option value="motorcycle">🏍️ Motorcycle</option>
+                <option value="car">🚗 Car</option>
+                <option value="bicycle">🚲 Bicycle</option>
+                <option value="walk">🚶 Walking</option>
+            </select>
+        </div>
+
+        <div class="input-group">
             <label>Ride Code (to join existing)</label>
             <input type="text" id="join-code" placeholder="Leave empty for new ride">
         </div>
@@ -97,6 +119,10 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <!-- Leaflet Geocoder JS -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <script src="app.js"></script>
 </body>

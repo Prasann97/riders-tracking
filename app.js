@@ -27,6 +27,15 @@ let currentRideId = null;
 let watchId = null;
 let currentTheme = 'dark';
 let tileLayer;
+let routingControl = null;
+let destinationPos = null;
+
+const routers = {
+    motorcycle: 'https://router.project-osrm.org/route/v1/driving/',
+    car: 'https://router.project-osrm.org/route/v1/driving/',
+    bicycle: 'https://router.project-osrm.org/route/v1/cycling/',
+    walk: 'https://router.project-osrm.org/route/v1/foot/'
+};
 
 const themes = {
     dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -36,6 +45,7 @@ const themes = {
 let userData = {
     name: "",
     bike: "",
+    vehicle: "motorcycle",
     id: "user_" + Math.random().toString(36).substr(2, 9)
 };
 
@@ -59,6 +69,18 @@ function initMap() {
         maxZoom: 19
     }).addTo(map);
 
+    // Add Geocoder search
+    const geocoder = L.Control.geocoder({
+        defaultMarkGeocode: false,
+        placeholder: "Search Destination...",
+        position: 'topleft'
+    })
+        .on('markgeocode', function (e) {
+            const dest = e.geocode.center;
+            setDestination(dest);
+        })
+        .addTo(map);
+
     // Show setup modal
     document.getElementById('setup-modal').classList.add('active');
 }
@@ -73,6 +95,7 @@ document.addEventListener('DOMContentLoaded', initMap);
 document.getElementById('confirm-setup').onclick = () => {
     userData.name = document.getElementById('user-name').value || "Anonymous Rider";
     userData.bike = document.getElementById('bike-model').value || "Bike";
+    userData.vehicle = document.getElementById('vehicle-type').value;
     const joinCode = document.getElementById('join-code').value.toUpperCase();
 
     if (joinCode) {
@@ -115,6 +138,7 @@ function startTracking() {
                 const data = {
                     name: userData.name,
                     bike: userData.bike,
+                    vehicle: userData.vehicle,
                     lat: pos.coords.latitude,
                     lng: pos.coords.longitude,
                     speed: (pos.coords.speed && pos.coords.speed > 0) ? (pos.coords.speed * 3.6).toFixed(1) : "0.0",
@@ -158,51 +182,108 @@ function listenForPartners() {
     // Listen for new riders
     rideRef.on('child_added', (snapshot) => {
         const id = snapshot.key;
-        if (id === userData.id) return;
+        if (id === userData.id || id === 'destination' || id === 'alerts') return;
         const r = snapshot.val();
-        updateMarker(id, { lat: r.lat, lng: r.lng }, r.name + " (" + r.bike + ")");
+        updateMarker(id, { lat: r.lat, lng: r.lng }, r.name + " (" + (r.bike || 'Bike') + ")", false, r.vehicle);
     });
 
     // Listen for location changes
     rideRef.on('child_changed', (snapshot) => {
         const id = snapshot.key;
-        if (id === userData.id) return;
+        if (id === userData.id || id === 'destination' || id === 'alerts') return;
         const r = snapshot.val();
-        updateMarker(id, { lat: r.lat, lng: r.lng }, r.name + " (" + r.bike + ")");
-
-        // Optional: Update stats if select individual rider (future feature)
+        updateMarker(id, { lat: r.lat, lng: r.lng }, r.name + " (" + (r.bike || 'Bike') + ")", false, r.vehicle);
     });
 
     // Handle rider leaving/offline
     rideRef.on('child_removed', (snapshot) => {
         const id = snapshot.key;
         if (markers[id]) {
-            markers[id].setMap(null);
             map.removeLayer(markers[id]);
             delete markers[id];
         }
     });
+
+    // Listen for destination updates
+    rideRef.child('destination').on('value', (snapshot) => {
+        const dest = snapshot.val();
+        if (dest && (!routingControl || !routingControl.getWaypoints()[1].latLng || !routingControl.getWaypoints()[1].latLng.equals(L.latLng(dest.lat, dest.lng)))) {
+            drawPathOnly(dest);
+        }
+    });
 }
 
-function updateMarker(id, position, title, isMe = false) {
+
+function drawPathOnly(dest) {
+    if (routingControl) map.removeControl(routingControl);
+
+    const end = L.latLng(dest.lat, dest.lng);
+
+    // Try to get current location for the path
+    navigator.geolocation.getCurrentPosition((pos) => {
+        const start = L.latLng(pos.coords.latitude, pos.coords.longitude);
+
+        routingControl = L.Routing.control({
+            waypoints: [start, end],
+            routeWhileDragging: false,
+            addWaypoints: false,
+            show: false, // Don't show numeric instructions by default
+            lineOptions: {
+                styles: [{ color: 'var(--primary)', opacity: 0.6, weight: 4, dashArray: '5, 10' }]
+            },
+            createMarker: function (i, wp) {
+                if (i === 1) return L.marker(wp.latLng, {
+                    icon: L.divIcon({ html: '🏁', className: 'dest-emoji', iconSize: [30, 30] })
+                });
+                return null;
+            }
+        }).addTo(map);
+    }, () => {
+        // Fallback: just show the destination marker if GPS is off
+        L.marker(end, {
+            icon: L.divIcon({ html: '🏁', className: 'dest-emoji', iconSize: [30, 30] })
+        }).addTo(map);
+    });
+}
+
+
+
+function updateMarker(id, position, title, isMe = false, vehicle = 'motorcycle') {
     const latlng = [position.lat, position.lng];
+
+    const icons = {
+        motorcycle: '🏍️',
+        car: '🚗',
+        bicycle: '🚲',
+        walk: '🚶'
+    };
+
+    const vehicleIcon = icons[vehicle] || '📍';
 
     if (markers[id]) {
         markers[id].setLatLng(latlng);
     } else {
-        // Create custom neon circle marker
-        markers[id] = L.circleMarker(latlng, {
-            radius: 8,
-            fillColor: isMe ? "#00f2ff" : "#ff4d4d",
-            color: "#fff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.8
+        // Create custom marker with emoji
+        const markerHtml = `
+            <div class="custom-marker ${isMe ? 'me' : 'partner'}">
+                <span class="vehicle">${vehicleIcon}</span>
+                <div class="pulse"></div>
+            </div>
+        `;
+
+        markers[id] = L.marker(latlng, {
+            icon: L.divIcon({
+                html: markerHtml,
+                className: 'leaflet-vehicle-icon',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            })
         }).addTo(map);
 
         markers[id].bindPopup(`<div style="color:black; font-weight:bold; padding:5px;">${title}</div>`);
     }
 }
+
 
 function zoomToFit() {
     const group = new L.featureGroup(Object.values(markers));
@@ -213,6 +294,60 @@ function zoomToFit() {
 function updateUI(data) {
     document.getElementById('current-speed').innerText = data.speed;
 }
+
+function setDestination(dest) {
+    destinationPos = dest;
+    document.getElementById('nav-mode-selector').style.display = 'flex';
+
+    if (routingControl) {
+        map.removeControl(routingControl);
+    }
+
+    // Get current location as start point
+    navigator.geolocation.getCurrentPosition((pos) => {
+        const start = L.latLng(pos.coords.latitude, pos.coords.longitude);
+        const end = L.latLng(dest.lat, dest.lng);
+
+        routingControl = L.Routing.control({
+            waypoints: [start, end],
+            router: L.Routing.osrmv1({
+                serviceUrl: routers[userData.vehicle] || routers.car
+            }),
+            routeWhileDragging: false,
+            lineOptions: {
+                styles: [{ color: 'var(--primary)', opacity: 0.8, weight: 6 }]
+            },
+            collapsible: true,
+            createMarker: function (i, wp) {
+                if (i === 1) return L.marker(wp.latLng, {
+                    icon: L.divIcon({ html: '🏁', className: 'dest-emoji', iconSize: [30, 30] })
+                });
+                return null;
+            }
+        }).addTo(map);
+
+        // Sync destination with group
+        if (db) {
+            db.ref(`tracking/${currentRideId}/destination`).set({
+                lat: dest.lat,
+                lng: dest.lng
+            });
+        }
+    });
+
+    // Handle clicks on the travel mode buttons
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            userData.vehicle = btn.getAttribute('data-mode');
+
+            // Recalculate route with new vehicle type
+            if (destinationPos) setDestination(destinationPos);
+        };
+    });
+}
+
 
 // SOS Logic
 document.getElementById('sos-btn').onclick = () => {

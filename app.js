@@ -85,10 +85,74 @@ function initMap() {
 
     // Show setup modal
     document.getElementById('setup-modal').classList.add('active');
+
+    // Initialize button handlers after map is ready
+    initializeButtons();
 }
 
 // Call initMap manually since Leaflet doesn't use a callback like Google
 document.addEventListener('DOMContentLoaded', initMap);
+
+// Initialize all button click handlers
+function initializeButtons() {
+    // Theme toggle
+    document.getElementById('theme-toggle-btn').onclick = () => {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+        console.log('Switching to theme:', currentTheme);
+
+        // Update Map tiles
+        if (tileLayer) {
+            tileLayer.setUrl(themes[currentTheme]);
+        }
+
+        // Update UI
+        if (currentTheme === 'light') {
+            document.body.classList.add('light-theme');
+        } else {
+            document.body.classList.remove('light-theme');
+        }
+    };
+
+    // Zoom to fit
+    document.getElementById('zoom-fit-btn').onclick = () => {
+        zoomToFit();
+    };
+
+    // Recenter button
+    document.getElementById('recenter-btn').onclick = () => {
+        followUser = true;
+        navigator.geolocation.getCurrentPosition((pos) => {
+            map.setView([pos.coords.latitude, pos.coords.longitude], 17);
+        });
+    };
+
+    // Exit navigation
+    document.getElementById('exit-nav-btn').onclick = () => {
+        isNavigating = false;
+        if (routingControl) map.removeControl(routingControl);
+        document.getElementById('trip-info-sheet').style.display = 'none';
+        document.getElementById('nav-mode-selector').style.display = 'none';
+        document.querySelector('.action-buttons').style.display = 'flex';
+    };
+
+    // SOS button
+    document.getElementById('sos-btn').onclick = () => {
+        alert("SOS ALERT SENT TO GROUP!");
+        if (db) {
+            db.ref(`tracking/${currentRideId}/alerts`).push({
+                type: "SOS",
+                sender: userData.name,
+                timestamp: Date.now()
+            });
+        }
+    };
+
+    // Map drag to disable follow
+    map.on('dragstart', () => {
+        followUser = false;
+    });
+}
 
 
 // --- CORE FUNCTIONALITY ---
@@ -379,70 +443,4 @@ function updateNavigationUI(dist, time, next) {
     if (next) {
         document.getElementById('next-step-instruction').innerText = next.text;
     }
-}
-
-document.getElementById('recenter-btn').onclick = () => {
-    followUser = true;
-    navigator.geolocation.getCurrentPosition((pos) => {
-        map.setView([pos.coords.latitude, pos.coords.longitude], 17);
-    });
-};
-
-document.getElementById('exit-nav-btn').onclick = () => {
-    isNavigating = false;
-    if (routingControl) map.removeControl(routingControl);
-    document.getElementById('trip-info-sheet').style.display = 'none';
-    document.getElementById('nav-mode-selector').style.display = 'none';
-    document.querySelector('.action-buttons').style.display = 'flex';
-};
-
-map.on('dragstart', () => {
-    followUser = false;
-});
-
-// SOS Logic
-document.getElementById('sos-btn').onclick = () => {
-    alert("SOS ALERT SENT TO GROUP!");
-    if (db) {
-        db.ref(`tracking/${currentRideId}/alerts`).push({
-            type: "SOS",
-            sender: userData.name,
-            timestamp: Date.now()
-        });
-    }
-};
-
-document.getElementById('zoom-fit-btn').onclick = () => {
-    zoomToFit();
-};
-
-// Theme toggle - ensure button exists before attaching
-const setupThemeToggle = () => {
-    const themeBtn = document.getElementById('theme-toggle-btn');
-    if (themeBtn) {
-        themeBtn.onclick = () => {
-            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            console.log('Switching to theme:', currentTheme);
-
-            // Update Map tiles
-            if (tileLayer) {
-                tileLayer.setUrl(themes[currentTheme]);
-            }
-
-            // Update UI
-            if (currentTheme === 'light') {
-                document.body.classList.add('light-theme');
-            } else {
-                document.body.classList.remove('light-theme');
-            }
-        };
-    }
-};
-
-// Call after DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupThemeToggle);
-} else {
-    setupThemeToggle();
 }

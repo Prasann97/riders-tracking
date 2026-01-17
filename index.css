@@ -10,6 +10,16 @@
     --warning: #ffb300;
 }
 
+body.light-theme {
+    --bg-dark: #f0f2f5;
+    --card-bg: #ffffff;
+    --text-main: #1a1a1a;
+    --text-dim: #65676b;
+    --primary: #007bff;
+    --primary-dark: #0056b3;
+}
+
+
 * {
     margin: 0;
     padding: 0;

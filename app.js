@@ -416,16 +416,33 @@ document.getElementById('zoom-fit-btn').onclick = () => {
     zoomToFit();
 };
 
-document.getElementById('theme-toggle-btn').onclick = () => {
-    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+// Theme toggle - ensure button exists before attaching
+const setupThemeToggle = () => {
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+        themeBtn.onclick = () => {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
-    // Update Map
-    tileLayer.setUrl(themes[currentTheme]);
+            console.log('Switching to theme:', currentTheme);
 
-    // Update UI
-    if (currentTheme === 'light') {
-        document.body.classList.add('light-theme');
-    } else {
-        document.body.classList.remove('light-theme');
+            // Update Map tiles
+            if (tileLayer) {
+                tileLayer.setUrl(themes[currentTheme]);
+            }
+
+            // Update UI
+            if (currentTheme === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+        };
     }
 };
+
+// Call after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupThemeToggle);
+} else {
+    setupThemeToggle();
+}

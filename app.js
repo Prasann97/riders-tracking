@@ -29,6 +29,8 @@ let currentTheme = 'dark';
 let tileLayer;
 let routingControl = null;
 let destinationPos = null;
+let isNavigating = false;
+let followUser = true;
 
 const routers = {
     motorcycle: 'https://router.project-osrm.org/route/v1/driving/',
@@ -154,7 +156,10 @@ function startTracking() {
                 // Update marker and center map
                 const userPos = [pos.coords.latitude, pos.coords.longitude];
                 updateMarker(userData.id, { lat: pos.coords.latitude, lng: pos.coords.longitude }, userData.name + " (Me)", true);
-                map.setView(userPos, map.getZoom());
+
+                if (followUser) {
+                    map.setView(userPos, map.getZoom());
+                }
             },
             (err) => {
                 console.error("WatchPosition Error:", err);
@@ -165,7 +170,8 @@ function startTracking() {
             {
                 enableHighAccuracy: true,
                 maximumAge: 0,
-                timeout: 10000
+                timeout: 10000,
+                maximumAge: 2000  // Force update every 2 seconds
             }
         );
     } else {
@@ -263,9 +269,10 @@ function updateMarker(id, position, title, isMe = false, vehicle = 'motorcycle')
     if (markers[id]) {
         markers[id].setLatLng(latlng);
     } else {
-        // Create custom marker with emoji
+        // Create custom marker with emoji and permanent label
         const markerHtml = `
             <div class="custom-marker ${isMe ? 'me' : 'partner'}">
+                <div class="rider-label">${title}</div>
                 <span class="vehicle">${vehicleIcon}</span>
                 <div class="pulse"></div>
             </div>
@@ -279,10 +286,9 @@ function updateMarker(id, position, title, isMe = false, vehicle = 'motorcycle')
                 iconAnchor: [20, 20]
             })
         }).addTo(map);
-
-        markers[id].bindPopup(`<div style="color:black; font-weight:bold; padding:5px;">${title}</div>`);
     }
 }
+
 
 
 function zoomToFit() {
@@ -324,6 +330,17 @@ function setDestination(dest) {
                 });
                 return null;
             }
+        }).on('routesfound', function (e) {
+            const routes = e.routes;
+            const summary = routes[0].summary;
+            const instructions = routes[0].instructions;
+
+            isNavigating = true;
+            document.getElementById('trip-info-sheet').style.display = 'flex';
+            document.getElementById('nav-mode-selector').style.display = 'flex';
+            document.querySelector('.action-buttons').style.display = 'none';
+
+            updateNavigationUI(summary.totalDistance, summary.totalTime, instructions[0]);
         }).addTo(map);
 
         // Sync destination with group
@@ -348,6 +365,40 @@ function setDestination(dest) {
     });
 }
 
+
+function updateNavigationUI(dist, time, next) {
+    // Distance in KM
+    const km = (dist / 1000).toFixed(1);
+    document.getElementById('trip-distance-left').innerText = km;
+
+    // ETA in Minutes
+    const mins = Math.round(time / 60);
+    document.getElementById('trip-eta').innerText = mins + " MINS";
+
+    // Next Step
+    if (next) {
+        document.getElementById('next-step-instruction').innerText = next.text;
+    }
+}
+
+document.getElementById('recenter-btn').onclick = () => {
+    followUser = true;
+    navigator.geolocation.getCurrentPosition((pos) => {
+        map.setView([pos.coords.latitude, pos.coords.longitude], 17);
+    });
+};
+
+document.getElementById('exit-nav-btn').onclick = () => {
+    isNavigating = false;
+    if (routingControl) map.removeControl(routingControl);
+    document.getElementById('trip-info-sheet').style.display = 'none';
+    document.getElementById('nav-mode-selector').style.display = 'none';
+    document.querySelector('.action-buttons').style.display = 'flex';
+};
+
+map.on('dragstart', () => {
+    followUser = false;
+});
 
 // SOS Logic
 document.getElementById('sos-btn').onclick = () => {

@@ -47,6 +47,7 @@
 
         <!-- Map Tools -->
         <div class="map-tools">
+            <button class="tool-btn" id="recenter-btn" title="Center on Me">🎯</button>
             <button class="tool-btn" id="theme-toggle-btn" title="Toggle Theme">🌓</button>
             <button class="tool-btn" id="zoom-fit-btn" title="Fit all riders">⛶</button>
         </div>
@@ -76,6 +77,24 @@
             <div class="action-buttons">
                 <button class="btn btn-sos" id="sos-btn">SOS</button>
                 <button class="btn btn-primary" id="main-action-btn">START RIDE</button>
+            </div>
+
+            <!-- Trip Info Sheet (Appear during navigation) -->
+            <div id="trip-info-sheet" class="trip-sheet" style="display: none;">
+                <div class="trip-summary">
+                    <div class="trip-main">
+                        <span id="trip-distance-left">--</span>
+                        <span class="trip-unit">KM</span>
+                    </div>
+                    <div class="trip-time">
+                        <span id="trip-eta">--</span>
+                        <span class="trip-unit-small">ETA</span>
+                    </div>
+                </div>
+                <div class="next-step" id="next-step-instruction">
+                    Search a destination to start navigation...
+                </div>
+                <button class="btn btn-danger" id="exit-nav-btn">EXIT NAV</button>
             </div>
         </div>
     </div>

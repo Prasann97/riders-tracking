@@ -25,6 +25,14 @@ let map;
 let markers = {};
 let currentRideId = null;
 let watchId = null;
+let currentTheme = 'dark';
+let tileLayer;
+
+const themes = {
+    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+};
+
 let userData = {
     name: "",
     bike: "",
@@ -46,8 +54,8 @@ function initMap() {
         attributionControl: false
     }).setView([12.9716, 77.5946], 15);
 
-    // Add Dark Mode tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Initial tile layer
+    tileLayer = L.tileLayer(themes[currentTheme], {
         maxZoom: 19
     }).addTo(map);
 
@@ -220,4 +228,18 @@ document.getElementById('sos-btn').onclick = () => {
 
 document.getElementById('zoom-fit-btn').onclick = () => {
     zoomToFit();
+};
+
+document.getElementById('theme-toggle-btn').onclick = () => {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+    // Update Map
+    tileLayer.setUrl(themes[currentTheme]);
+
+    // Update UI
+    if (currentTheme === 'light') {
+        document.body.classList.add('light-theme');
+    } else {
+        document.body.classList.remove('light-theme');
+    }
 };
